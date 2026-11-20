@@ -23,15 +23,15 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install --editable '.[ci]'
-      - name: Run all unit tests with the GIL disabled
+      - name: Verify free-threaded Python with the GIL disabled
         shell: python
         run: |
           import sys
-
-          import pytest
+          import sysconfig
 
           print(sys.version, flush=True)
+          assert sysconfig.get_config_var("Py_GIL_DISABLED") == 1, "Expected a free-threaded Python build"
           assert not sys._is_gil_enabled(), "Expected a free-threaded interpreter with the GIL disabled"
-          result = pytest.main(["-q", "tests"])
-          assert not sys._is_gil_enabled(), "A dependency enabled the GIL during the tests"
-          sys.exit(result)
+      - name: Run Unit Tests
+        run: ./test.sh unit
+        shell: bash
