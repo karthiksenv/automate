@@ -6,7 +6,26 @@ on:
 permissions:
   contents: read
 jobs:
+  get_max_python_version:
+    runs-on: ubuntu-latest
+    outputs:
+      max_python_version: ${{ steps.get-python.outputs.max_python_version }}
+    steps:
+      - name: Checkout STUMPY
+        uses: actions/checkout@v4
+        with:
+          repository: stumpy-dev/stumpy
+      - name: Upgrade Pip, Install Minimum Requirements
+        run: python -m pip install --upgrade pip pandas lxml packaging docutils
+        shell: bash
+      - name: Get maximum Python version
+        id: get-python
+        run: |
+          MAX_PYTHON=$(python ./versions.py -mode max | grep '^python:' | awk '{print $2}')
+          echo "max_python_version=\"$MAX_PYTHON\"" >> "$GITHUB_OUTPUT"
+        shell: bash
   check_free_threaded_python:
+    needs: get_max_python_version
     runs-on: ubuntu-latest
     steps:
       - name: Checkout STUMPY
@@ -16,7 +35,7 @@ jobs:
       - name: Set Up Free-Threaded Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.x'
+          python-version: ${{ fromJSON(needs.get_max_python_version.outputs.max_python_version) }}
           freethreaded: true
           check-latest: true
       - name: Install STUMPY and test dependencies
